@@ -99,6 +99,20 @@ fn app() -> react_node {
 export fn main() {
 	root: element = query_selector("#root").unwrap_or_panic("No element with ID \"root\" found.")
 
+	x: result(int | float) = result.ok(42)
+
+	match x {
+		result.ok(value: int) -> {
+			io.stdout.write_line("ok(int(${value}))")
+		}
+		result.ok(value: float) -> {
+			io.stdout.write_line("ok(float(${value}))")
+		}
+		result.error(message) -> {
+			io.stdout.write_line("error(\"${message}\")")
+		}
+	}
+
 	render(
 	root
 	// jsx! { <app /> }

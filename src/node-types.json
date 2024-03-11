@@ -175,6 +175,10 @@
           "named": true
         },
         {
+          "type": "match_expression",
+          "named": true
+        },
+        {
           "type": "unary_expression",
           "named": true
         },
@@ -511,6 +515,48 @@
       "types": [
         {
           "type": "expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expression",
+          "named": true
+        },
+        {
+          "type": "match_expression_matcher",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "match_expression_matcher",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "expression",
+          "named": true
+        },
+        {
+          "type": "type_expression",
           "named": true
         }
       ]
@@ -1297,6 +1343,10 @@
   {
     "type": "macro_identifier",
     "named": true
+  },
+  {
+    "type": "match",
+    "named": false
   },
   {
     "type": "octal_literal",

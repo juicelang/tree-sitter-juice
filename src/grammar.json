@@ -224,11 +224,11 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "string_interpolation"
+                    "name": "string_text"
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "string_text"
+                    "name": "string_interpolation"
                   }
                 ]
               }
@@ -250,11 +250,11 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "string_interpolation"
+                "name": "string_text"
               },
               {
                 "type": "SYMBOL",
-                "name": "string_text"
+                "name": "string_interpolation"
               }
             ]
           }
@@ -291,13 +291,13 @@
         },
         {
           "type": "PATTERN",
-          "value": "(\\\"|\\\\|\\/|b|f|n|r|t|u)"
+          "value": "(\\\"|\\\\|\\/|b|f|n|r|t|u|.)"
         }
       ]
     },
     "string_text": {
       "type": "PATTERN",
-      "value": "[^\\\\\"(?:\\$\\{)(?:\\s*\\| )]+"
+      "value": "[^\\\\\"$]+"
     },
     "_root_statement": {
       "type": "CHOICE",
@@ -443,6 +443,10 @@
         {
           "type": "SYMBOL",
           "name": "if_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "match_expression"
         }
       ]
     },
@@ -2382,6 +2386,60 @@
         {
           "type": "STRING",
           "value": "]"
+        }
+      ]
+    },
+    "match_expression": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "match"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "expression"
+        },
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "match_expression_matcher"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "match_expression_matcher": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "expression"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "type_expression"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "->"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "block"
         }
       ]
     }

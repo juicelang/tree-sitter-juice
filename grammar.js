@@ -59,8 +59,8 @@ module.exports = grammar({
 						choice(
 							$.string_indent,
 							$.string_escape_sequence,
-							$.string_interpolation,
 							$.string_text,
+							$.string_interpolation,
 						),
 					),
 					/\n\s*/,
@@ -68,8 +68,8 @@ module.exports = grammar({
 				repeat1(
 					choice(
 						$.string_escape_sequence,
-						$.string_interpolation,
 						$.string_text,
+						$.string_interpolation,
 					),
 				),
 			),
@@ -78,9 +78,9 @@ module.exports = grammar({
 
 		string_interpolation: ($) => seq("${", $.expression, "}"),
 
-		string_escape_sequence: ($) => seq("\\", /(\"|\\|\/|b|f|n|r|t|u)/),
+		string_escape_sequence: ($) => seq("\\", /(\"|\\|\/|b|f|n|r|t|u|.)/),
 
-		string_text: ($) => /[^\\"(?:\$\{)(?:\s*\| )]+/,
+		string_text: ($) => /[^\\"$]+/,
 
 		_root_statement: ($) =>
 			choice(
@@ -126,6 +126,7 @@ module.exports = grammar({
 				$.unary_expression,
 				$.binary_expression,
 				$.if_expression,
+				$.match_expression,
 			),
 
 		_literal: ($) => choice($._number, $.string_literal, $.bool_literal, $.list_literal),
@@ -313,7 +314,7 @@ module.exports = grammar({
 					choice($.expression, $.macro_identifier),
 					"(",
 					$.function_arguments,
-						optional(","),
+					optional(","),
 					")",
 				),
 			),
@@ -363,5 +364,19 @@ module.exports = grammar({
 		else_expression: ($) => seq("else", choice($.if_expression, $.block)),
 
 		list_literal: $ => seq("[", comma_separated($.expression), optional(","), "]"),
+
+		match_expression: $ => seq(
+			"match",
+			$.expression,
+			"{",
+			repeat($.match_expression_matcher),
+			"}",
+		),
+
+		match_expression_matcher: $ => seq(
+			choice($.expression, $.type_expression),
+			"->",
+			$.block
+		),
 	},
 });
