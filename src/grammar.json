@@ -2400,6 +2400,9 @@
     [
       "_statement",
       "value_expression"
+    ],
+    [
+      "function_arguments"
     ]
   ],
   "precedences": [],

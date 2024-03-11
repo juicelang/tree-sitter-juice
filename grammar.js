@@ -10,7 +10,10 @@ module.exports = grammar({
 
 	extras: ($) => [/\s/, $.comment],
 
-	conflicts: ($) => [[$._statement, $.value_expression]],
+	conflicts: ($) => [
+		[$._statement, $.value_expression],
+		[$.function_arguments]
+	],
 
 	rules: {
 		program: ($) => seq(optional($.hash_bang_line), repeat($._root_statement)),
