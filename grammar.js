@@ -194,6 +194,7 @@ module.exports = grammar({
 
 		import_statement: ($) =>
 			seq(
+				optional("foreign"),
 				"import",
 				$.import_path,
 				optional($.import_as),
@@ -292,6 +293,7 @@ module.exports = grammar({
 
 		function_declaration: ($) =>
 			seq(
+				optional("static"),
 				"fn",
 				field("name", optional(choice($.identifier, $.macro_identifier))),
 				optional($.function_parameters),
