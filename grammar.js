@@ -46,6 +46,8 @@ module.exports = grammar({
 				"loop",
 				"break",
 				"await",
+				"static",
+				"foreign"
 			),
 
 		string_literal: ($) =>

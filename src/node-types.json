@@ -1313,6 +1313,10 @@
     "named": false
   },
   {
+    "type": "foreign",
+    "named": false
+  },
+  {
     "type": "hash_bang_line",
     "named": true
   },
@@ -1351,6 +1355,10 @@
   {
     "type": "octal_literal",
     "named": true
+  },
+  {
+    "type": "static",
+    "named": false
   },
   {
     "type": "string_indent",

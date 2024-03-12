@@ -161,6 +161,14 @@
         {
           "type": "STRING",
           "value": "await"
+        },
+        {
+          "type": "STRING",
+          "value": "static"
+        },
+        {
+          "type": "STRING",
+          "value": "foreign"
         }
       ]
     },
