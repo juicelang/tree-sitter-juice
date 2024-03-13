@@ -39,7 +39,6 @@ module.exports = grammar({
 			choice(
 				"fn",
 				"import",
-				"type",
 				"if",
 				"else",
 				"for",
@@ -47,7 +46,10 @@ module.exports = grammar({
 				"break",
 				"await",
 				"static",
-				"foreign"
+				"foreign",
+				"return",
+				"break",
+				"continue"
 			),
 
 		string_literal: ($) =>
@@ -108,6 +110,7 @@ module.exports = grammar({
 		_statement: ($) =>
 			choice(
 				$.function_declaration,
+				$.function_call,
 				$.variable_assignment,
 				$.variable_declaration,
 				$.expression,
@@ -258,10 +261,10 @@ module.exports = grammar({
 			seq(
 				$.identifier,
 				choice(":=", seq(":", $.type_expression, "=")),
-				$.expression,
+				choice($.expression, $.block),
 			),
 
-		variable_assignment: ($) => seq($.identifier, "=", $.expression),
+		variable_assignment: ($) => seq($.identifier, "=", choice($.expression, $.block)),
 
 		type_declaration: ($) =>
 			seq(
