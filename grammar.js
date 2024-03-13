@@ -28,7 +28,7 @@ module.exports = grammar({
 		_any_identifier: ($) => choice($.identifier, $.macro_identifier),
 
 		int_literal: ($) => token(/[0-9](_?[0-9])*/),
-		float_literal: ($) => token(/[0-9](_?[0-9])*\.([0-9](_?[0-9])*)?/),
+		float_literal: ($) => token.immediate(/[0-9](_?[0-9])*\.([0-9](_?[0-9])*)?/),
 		binary_literal: ($) => token(/0b[01](_?[01])*/),
 		octal_literal: ($) => token(/0o[0-7](_?[0-7])*/),
 		hex_literal: ($) => token(/0x[0-9a-fA-F](_?[0-9a-fA-F])*/),
@@ -113,6 +113,7 @@ module.exports = grammar({
 				$.function_call,
 				$.variable_assignment,
 				$.variable_declaration,
+				$.for_loop,
 				$.expression,
 			),
 
@@ -384,6 +385,24 @@ module.exports = grammar({
 			choice($.expression, $.type_expression),
 			"->",
 			$.block
+		),
+
+		for_loop: $ =>
+			choice(
+				seq("for", $.block),
+				seq("for", $.for_loop_iterator, $.block),
+				seq("for", $.identifier, "of", $.for_loop_iterator, $.block)
+		),
+
+		for_loop_iterator: $ => choice(
+			$.expression,
+			$.range
+		),
+
+		range: $ => seq(
+			$.expression,
+			"..",
+			$.expression
 		),
 	},
 });
