@@ -59,7 +59,7 @@ fn get_app_version!() -> future(token_stream) {
 version := get_app_version!()
 
 // Type aliases can be declared at the base level of a file.
-'counter_state := (number, dispatch(number))
+// 'counter_state := (number, dispatch(number))
 
 fn app() -> react_node {
 	// Multiple return values via tuple
