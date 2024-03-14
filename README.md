@@ -34,3 +34,10 @@ the following command.
 ```shell
 watch-grammar
 ```
+
+There is also a script for watching `example.juice` and performing highlighting on the file.
+Note that this command does *not* generate the parser.
+
+```shell
+watch-highlight
+```

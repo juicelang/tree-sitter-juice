@@ -12,7 +12,7 @@ module.exports = grammar({
 
 	conflicts: ($) => [
 		[$._statement, $.value_expression],
-		[$.function_arguments]
+		[$.function_arguments],
 	],
 
 	rules: {
@@ -28,12 +28,13 @@ module.exports = grammar({
 		_any_identifier: ($) => choice($.identifier, $.macro_identifier),
 
 		int_literal: ($) => token(/[0-9](_?[0-9])*/),
-		float_literal: ($) => token.immediate(/[0-9](_?[0-9])*\.([0-9](_?[0-9])*)?/),
+		float_literal: ($) =>
+			token.immediate(/[0-9](_?[0-9])*\.([0-9](_?[0-9])*)?/),
 		binary_literal: ($) => token(/0b[01](_?[01])*/),
 		octal_literal: ($) => token(/0o[0-7](_?[0-7])*/),
 		hex_literal: ($) => token(/0x[0-9a-fA-F](_?[0-9a-fA-F])*/),
 
-		bool_literal: $ => choice("true", "false"),
+		bool_literal: ($) => choice("true", "false"),
 
 		keyword: ($) =>
 			choice(
@@ -49,7 +50,7 @@ module.exports = grammar({
 				"foreign",
 				"return",
 				"break",
-				"continue"
+				"continue",
 			),
 
 		string_literal: ($) =>
@@ -109,6 +110,7 @@ module.exports = grammar({
 
 		_statement: ($) =>
 			choice(
+				$.return_statement,
 				$.function_declaration,
 				$.function_call,
 				$.variable_assignment,
@@ -135,7 +137,8 @@ module.exports = grammar({
 				$.match_expression,
 			),
 
-		_literal: ($) => choice($._number, $.string_literal, $.bool_literal, $.list_literal),
+		_literal: ($) =>
+			choice($._number, $.string_literal, $.bool_literal, $.list_literal),
 
 		value_expression: ($) =>
 			prec.left(
@@ -218,6 +221,7 @@ module.exports = grammar({
 			prec.left(
 				11,
 				choice(
+					$.builtin_type,
 					$.identifier,
 					$.type_identifier,
 					$._literal,
@@ -244,7 +248,7 @@ module.exports = grammar({
 			),
 
 		type_function_call: ($) =>
-			prec.left(1, seq($.expression, "(", $.type_function_arguments, optional(","), ")")),
+			prec.left(1, seq($.identifier, "(", $.type_function_arguments, ")")),
 
 		type_function_arguments: ($) =>
 			prec.left(1, comma_separated($.type_function_argument)),
@@ -260,16 +264,20 @@ module.exports = grammar({
 
 		variable_declaration: ($) =>
 			seq(
-				$.identifier,
+				field("name", $.identifier),
 				choice(":=", seq(":", $.type_expression, "=")),
 				choice($.expression, $.block),
 			),
 
-		variable_assignment: ($) => seq($.identifier, "=", choice($.expression, $.block)),
+		variable_assignment: ($) =>
+			seq($.identifier, "=", choice($.expression, $.block)),
 
 		type_declaration: ($) =>
 			seq(
-				choice(seq("type", $.identifier), $.type_identifier),
+				choice(
+					seq("type", field("name", $.identifier)),
+					field("name", $.type_identifier),
+				),
 				optional($.type_parameters),
 				":=",
 				choice($.type_expression, $.type_constructors),
@@ -278,7 +286,7 @@ module.exports = grammar({
 		type_parameters: ($) => seq("(", comma_separated($.type_parameter), ")"),
 
 		type_parameter: ($) =>
-			seq($.identifier, optional(seq(":", $.type_expression))),
+			seq(field("name", $.identifier), optional(seq(":", $.type_expression))),
 
 		type_constructors: ($) =>
 			seq(
@@ -290,7 +298,8 @@ module.exports = grammar({
 				"}",
 			),
 
-		type_constructor: ($) => seq($.identifier, $.type_parameters),
+		type_constructor: ($) =>
+			seq(field("constructor_name", $.identifier), $.type_parameters),
 
 		type_constructor_shorthand: ($) =>
 			seq($.identifier, ":", $.type_expression),
@@ -300,16 +309,19 @@ module.exports = grammar({
 				optional("static"),
 				"fn",
 				field("name", optional(choice($.identifier, $.macro_identifier))),
-				optional($.function_parameters),
+				field("params", optional($.function_parameters)),
 				optional($.function_return_type),
-				$.block,
+				seq("{", repeat($._statement), "}"),
 			),
 
 		function_parameters: ($) =>
 			seq("(", comma_separated($.function_parameter), optional(","), ")"),
 
 		function_parameter: ($) =>
-			seq($.identifier, optional(seq(":", $.type_expression))),
+			seq(
+				field("param_name", $.identifier),
+				optional(seq(":", field("param_type", $.type_expression))),
+			),
 
 		function_return_type: ($) => seq("->", $.type_expression),
 
@@ -319,7 +331,7 @@ module.exports = grammar({
 			prec(
 				1,
 				seq(
-					choice($.expression, $.macro_identifier),
+					field("name", choice($.macro_identifier, $.identifier, $.expression)),
 					"(",
 					$.function_arguments,
 					optional(","),
@@ -367,42 +379,42 @@ module.exports = grammar({
 		impl_block: ($) => seq("{", repeat($.function_declaration), "}"),
 
 		if_expression: ($) =>
-			seq("if", $.expression, $.block, optional($.else_expression)),
+			seq(
+				"if",
+				$.expression,
+				"{",
+				repeat($._statement),
+				"}",
+				optional($.else_expression),
+			),
 
-		else_expression: ($) => seq("else", choice($.if_expression, $.block)),
+		else_expression: ($) =>
+			seq("else", choice($.if_expression, seq("{", repeat($._statement), "}"))),
 
-		list_literal: $ => seq("[", comma_separated($.expression), optional(","), "]"),
+		list_literal: ($) =>
+			seq("[", comma_separated($.expression), optional(","), "]"),
 
-		match_expression: $ => seq(
-			"match",
-			$.expression,
-			"{",
-			repeat($.match_expression_matcher),
-			"}",
-		),
+		match_expression: ($) =>
+			seq("match", $.expression, "{", repeat($.match_expression_matcher), "}"),
 
-		match_expression_matcher: $ => seq(
-			choice($.expression, $.type_expression),
-			"->",
-			$.block
-		),
+		match_expression_matcher: ($) =>
+			seq(choice($.expression, $.type_expression), "->", $.block),
 
-		for_loop: $ =>
+		for_loop: ($) =>
 			choice(
 				seq("for", $.block),
 				seq("for", $.for_loop_iterator, $.block),
-				seq("for", $.identifier, "of", $.for_loop_iterator, $.block)
-		),
+				seq("for", $.identifier, "of", $.for_loop_iterator, $.block),
+			),
 
-		for_loop_iterator: $ => choice(
-			$.expression,
-			$.range
-		),
+		for_loop_iterator: ($) => choice($.expression, $.range),
 
-		range: $ => seq(
-			$.expression,
-			"..",
-			$.expression
-		),
+		range: ($) => seq($.expression, "..", $.expression),
+
+		return_statement: ($) =>
+			prec.left(1, seq("return", optional($.expression))),
+
+		builtin_type: ($) =>
+			choice("string", "int", "float", "string", "list", "unit"),
 	},
 });
