@@ -1,0 +1,16 @@
+{
+	"grammars": [
+		{
+			"name": "juice",
+			"camelcase": "Juice",
+			"scope": "source.juice",
+			"path": ".",
+			"file-types": [
+				"juice"
+			],
+			"highlights": [
+				"queries/highlights.scm"
+			]
+		}
+	]
+}

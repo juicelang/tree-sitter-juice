@@ -1,3 +1,6 @@
+/// <reference types="tree-sitter-cli/dsl" />
+// @ts-check
+
 const separated = (separator) => (rule) =>
 	seq(rule, repeat(seq(separator, rule)));
 
@@ -11,8 +14,10 @@ module.exports = grammar({
 	extras: ($) => [/\s/, $.comment],
 
 	conflicts: ($) => [
-		[$._statement, $.value_expression],
 		[$.function_arguments],
+		[$.identifier, $.type_identifier],
+		[$.variable_assignment, $.record_literal_field],
+		[$.record_literal, $.block]
 	],
 
 	rules: {
@@ -23,8 +28,8 @@ module.exports = grammar({
 		hash_bang_line: ($) => /#!.*/,
 
 		identifier: ($) => choice(/[a-z_]([a-z0-9_]+)?/),
-		type_identifier: ($) => /'[a-z_]([a-z0-9_]+)?/,
-		macro_identifier: ($) => /[a-z_]([a-z0-9_]+)?!/,
+		type_identifier: ($) => /[a-z_]([a-z0-9_]+)?/,
+		macro_identifier: ($) => prec(1, seq($.identifier, "!")),
 		_any_identifier: ($) => choice($.identifier, $.macro_identifier),
 
 		int_literal: ($) => token(/[0-9](_?[0-9])*/),
@@ -109,14 +114,18 @@ module.exports = grammar({
 			seq("export", $.variable_declaration),
 
 		_statement: ($) =>
-			choice(
-				$.return_statement,
-				$.function_declaration,
-				$.function_call,
-				$.variable_assignment,
-				$.variable_declaration,
-				$.for_loop,
-				$.expression,
+			prec(2,
+				choice(
+					$.return_statement,
+					$.function_declaration,
+					$.macro_call_with_body,
+					$.macro_call,
+					$.function_call,
+					$.variable_assignment,
+					$.variable_declaration,
+					$.for_loop,
+					$.expression,
+				)
 			),
 
 		_number: ($) =>
@@ -138,19 +147,21 @@ module.exports = grammar({
 			),
 
 		_literal: ($) =>
-			choice($._number, $.string_literal, $.bool_literal, $.list_literal),
+			choice($._number, $.string_literal, $.bool_literal, $.list_literal, prec(1, $.record_literal)),
 
 		value_expression: ($) =>
 			prec.left(
 				0,
 				seq(
 					choice(
+						$.type_access,
 						$.member_access,
 						$.identifier,
-						$._literal,
 						$.tuple,
 						$.function_call,
 						$.function_declaration,
+						$.macro_call,
+						$._literal,
 					),
 					optional("?"),
 				),
@@ -192,6 +203,7 @@ module.exports = grammar({
 						precedence,
 						seq(
 							field("left", $.expression),
+							// @ts-ignore
 							field("operator", operator),
 							field("right", $.expression),
 						),
@@ -240,6 +252,7 @@ module.exports = grammar({
 						precedence,
 						seq(
 							field("left", $.type_expression),
+							// @ts-ignore
 							field("operator", operator),
 							field("right", $.type_expression),
 						),
@@ -274,8 +287,9 @@ module.exports = grammar({
 
 		type_declaration: ($) =>
 			seq(
+				"type",
 				choice(
-					seq("type", field("name", $.identifier)),
+					field("name", $.identifier),
 					field("name", $.type_identifier),
 				),
 				optional($.type_parameters),
@@ -325,13 +339,13 @@ module.exports = grammar({
 
 		function_return_type: ($) => seq("->", $.type_expression),
 
-		block: ($) => seq("{", repeat($._statement), "}"),
+		block: ($) => prec(1, seq("{", repeat($._statement), "}")),
 
 		function_call: ($) =>
 			prec(
 				1,
 				seq(
-					field("name", choice($.macro_identifier, $.identifier, $.expression)),
+					field("name", choice($.identifier, $.expression)),
 					"(",
 					$.function_arguments,
 					optional(","),
@@ -342,6 +356,50 @@ module.exports = grammar({
 		function_arguments: ($) => comma_separated($.function_argument),
 
 		function_argument: ($) =>
+			seq(
+				optional(seq(choice($.identifier, $.type_identifier), ":")),
+				$.expression,
+			),
+
+		macro_call: ($) =>
+			prec.left(
+				2,
+				seq(
+					field("name", $.macro_identifier),
+					choice(
+						field("arguments", seq(
+							"(",
+							$.macro_arguments,
+							optional(","),
+							")",
+						)),
+						field("body", $.macro_body),
+					)
+				),
+			),
+
+		macro_call_with_body: ($) =>
+			prec.left(
+				3,
+				seq(
+					field("name", $.macro_identifier),
+					field("arguments", seq(
+						"(",
+						$.macro_arguments,
+						optional(","),
+						")",
+					)),
+					field("body", $.macro_body),
+				),
+			),
+
+		macro_body: ($) => seq("{", optional($.macro_body_content), "}"),
+
+		macro_body_content: ($) => repeat1(/.+/),
+
+		macro_arguments: ($) => prec.left(2, comma_separated($.macro_argument)),
+
+		macro_argument: ($) =>
 			seq(
 				optional(seq(choice($.identifier, $.type_identifier), ":")),
 				$.expression,
@@ -369,6 +427,8 @@ module.exports = grammar({
 
 		member_access: ($) => prec.left(0, seq($.expression, ".", $.expression)),
 
+		type_access: ($) => prec.left(1, seq($.expression, "::", $.expression)),
+
 		impl_declaration: ($) =>
 			seq("impl", choice($.impl_for, $.impl_shorthand), $.impl_block),
 
@@ -393,6 +453,28 @@ module.exports = grammar({
 
 		list_literal: ($) =>
 			seq("[", comma_separated($.expression), optional(","), "]"),
+
+		record_literal: ($) =>
+			prec(1,
+				seq(
+					"{",
+					repeat(
+						seq(
+							choice(
+								$.record_literal_shorthand,
+								$.record_literal_field
+							),
+							optional(",")
+						)
+					),
+					"}",
+				)
+			),
+
+		record_literal_shorthand: ($) => prec(1, seq($.identifier)),
+
+		record_literal_field: ($) =>
+			seq($.identifier, "=", $.expression),
 
 		match_expression: ($) =>
 			seq("match", $.expression, "{", repeat($.match_expression_matcher), "}"),

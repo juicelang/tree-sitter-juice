@@ -3,7 +3,7 @@
   mkShell,
   tree-sitter,
   nodejs,
-  python38,
+  python39,
   entr,
   writeShellScriptBin,
   ...
@@ -17,7 +17,7 @@
   '';
   highlight = writeShellScriptBin "highlight" ''
     clear
-    ${tree-sitter-cli} highlight ./example.juice
+    ${tree-sitter-cli} --config-path config.json highlight ./example.juice
   '';
   watch-grammar = writeShellScriptBin "watch-grammar" ''
     ls grammar.js example.juice | entr ${lib.getExe generate-and-parse}
@@ -30,7 +30,7 @@ in
     nativeBuildInputs = [
       (tree-sitter.override {webUISupport = true;})
       nodejs
-      python38
+      python39
       entr
       generate-and-parse
       watch-grammar
